@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: theme(colors.zinc.800);
+}
+
+::-webkit-scrollbar-thumb {
+  background: theme(colors.zinc.600);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: theme(colors.zinc.500);
+}
+
+/* Thinking block animation */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Code block styling */
+pre {
+  @apply bg-zinc-800 rounded-lg p-4 overflow-x-auto;
+}
+
+code {
+  @apply font-mono text-sm;
+}
+
+:not(pre) > code {
+  @apply bg-zinc-800 px-1.5 py-0.5 rounded;
+}
+
+/* Markdown styling */
+.prose {
+  @apply text-zinc-100;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  @apply text-zinc-100 font-semibold;
+}
+
+.prose a {
+  @apply text-blue-400 hover:text-blue-300;
+}
+
+.prose strong {
+  @apply text-zinc-100;
+}
+
+.prose ul, .prose ol {
+  @apply pl-6;
+}
+
+.prose li {
+  @apply my-1;
+}
+
+.prose blockquote {
+  @apply border-l-4 border-zinc-600 pl-4 italic text-zinc-400;
+}
+
+.prose table {
+  @apply w-full border-collapse;
+}
+
+.prose th, .prose td {
+  @apply border border-zinc-700 px-3 py-2;
+}
+
+.prose th {
+  @apply bg-zinc-800;
+}

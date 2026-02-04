@@ -2,111 +2,203 @@
 
 A web application frontend for the [pi coding agent](https://github.com/badlogic/pi-mono) with full feature parity to the terminal TUI.
 
-## Status
+## Features
 
-🚧 **In Development** - See [PLAN.md](./PLAN.md) for the implementation roadmap.
+- 💬 **Full Chat Interface** - Message streaming, thinking blocks, tool execution display
+- 🛠️ **Tool Visualization** - Bash output, file reads, edits, and writes with syntax highlighting
+- 🌲 **Session Management** - Tree-based branching (coming soon)
+- 🤖 **Model & Thinking Control** - Cycle models and thinking levels
+- 🔌 **Extension Support** - Extension UI dialogs (select, confirm, input)
+- ⌨️ **Keyboard Shortcuts** - TUI-like keybindings
+- 🎨 **Dark Theme** - Tailwind-based dark mode design
 
-## Overview
+## Quick Start
 
-Pi Web provides a browser-based interface to interact with a pi coding agent backend instance. It communicates via WebSocket using the pi RPC protocol, enabling:
+### 1. Install dependencies
 
-- Full chat interface with streaming responses
-- Tool execution display (bash, read, edit, write)
-- Session management (tree-based branching, forking)
-- Model and thinking level selection
-- Extension UI support (dialogs, notifications, widgets)
-- Theming and keyboard shortcuts
+```bash
+cd pi-web
+npm install
+```
+
+### 2. Build all packages
+
+```bash
+npm run build
+```
+
+### 3. Start the backend server
+
+```bash
+npm run dev -w @pi-web/backend
+```
+
+The backend server will start on `ws://localhost:3001` by default.
+
+### 4. Start the frontend development server
+
+In a new terminal:
+
+```bash
+npm run dev -w @pi-web/frontend
+```
+
+The frontend will be available at `http://localhost:3000`.
+
+### 5. Connect to a project
+
+1. Open `http://localhost:3000` in your browser
+2. Enter the WebSocket URL (default: `ws://localhost:3001`)
+3. Enter the working directory path for your project
+4. Click "Connect"
 
 ## Architecture
 
 ```
 Browser                          Server
-┌──────────────┐                ┌──────────────┐
-│  React App   │  WebSocket     │  Node.js     │
-│  - Chat UI   │ ──────────────▶│  - WS Server │
-│  - Dialogs   │                │  - Bridge    │
-│  - Settings  │◀────────────── │  - Process   │
-└──────────────┘                └──────────────┘
-                                      │
-                                      │ stdio
-                                      ▼
-                                ┌──────────────┐
-                                │ pi --mode rpc│
-                                │  - Agent     │
-                                │  - Tools     │
-                                │  - Sessions  │
-                                └──────────────┘
+┌──────────────────┐            ┌──────────────────┐
+│  React Frontend  │  WebSocket │  Node.js Server  │
+│  - Chat UI       │ ──────────▶│  - WS Handler    │
+│  - Store         │            │  - Process Mgmt  │
+│  - Dialogs       │◀────────── │  - Bridge        │
+└──────────────────┘            └──────────────────┘
+                                       │
+                                       │ stdio
+                                       ▼
+                                ┌──────────────────┐
+                                │  pi --mode rpc   │
+                                │  - Agent Loop    │
+                                │  - Tools         │
+                                │  - Extensions    │
+                                │  - Sessions      │
+                                └──────────────────┘
 ```
 
-## Getting Started
+## Keyboard Shortcuts
 
-```bash
-# Install dependencies
-pnpm install
-
-# Start development server (frontend + backend)
-pnpm dev
-
-# Build for production
-pnpm build
-
-# Start production server
-pnpm start
-```
+| Shortcut | Action |
+|----------|--------|
+| `Enter` | Send message |
+| `Shift+Enter` | New line in input |
+| `Escape` | Abort streaming |
+| `Ctrl+P` | Cycle model |
+| `Shift+Tab` | Cycle thinking level |
+| `Ctrl+O` | Toggle tools collapsed |
 
 ## Configuration
 
-Create a `.env` file:
+### Backend Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `3001` | WebSocket server port |
+| `HOST` | `0.0.0.0` | Server host |
+| `PI_CWD` | Current directory | Default working directory |
+| `PI_COMMAND` | `pi` | Path to pi executable |
+
+Create a `.env` file in `packages/backend/`:
 
 ```env
-# Backend port
 PORT=3001
-
-# Frontend WebSocket URL
-VITE_WS_URL=ws://localhost:3001
-
-# Default working directory for pi
-PI_CWD=/path/to/project
+HOST=0.0.0.0
+PI_CWD=/home/user/projects/my-project
+PI_COMMAND=pi
 ```
 
-## Features
+### Frontend Environment Variables
 
-### Implemented
-- [ ] WebSocket connection to backend
-- [ ] Chat message display
-- [ ] Message streaming
-- [ ] Tool result rendering
-- [ ] Model selection
-- [ ] Session management
-- [ ] Extension UI dialogs
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `VITE_WS_URL` | `ws://localhost:3001` | WebSocket URL |
 
-See [PLAN.md](./PLAN.md) for the complete feature matrix and implementation status.
-
-## Development
-
-### Project Structure
+## Project Structure
 
 ```
 pi-web/
 ├── packages/
-│   ├── frontend/     # React web application
-│   ├── backend/      # WebSocket server
-│   └── shared/       # Shared TypeScript types
-├── PLAN.md           # Implementation roadmap
-└── README.md         # This file
+│   ├── shared/              # Shared types (RPC protocol)
+│   │   └── src/
+│   │       └── index.ts     # Type definitions
+│   │
+│   ├── backend/             # WebSocket server
+│   │   └── src/
+│   │       ├── server.ts    # WebSocket handler
+│   │       ├── session.ts   # Pi process management
+│   │       └── cli.ts       # CLI entry point
+│   │
+│   └── frontend/            # React web app
+│       └── src/
+│           ├── components/  # React components
+│           │   ├── chat/    # Chat UI
+│           │   ├── dialogs/ # Modal dialogs
+│           │   ├── layout/  # App shell
+│           │   └── ui/      # UI primitives
+│           ├── rpc/         # WebSocket client
+│           ├── store/       # Zustand state
+│           └── hooks/       # React hooks
+│
+├── package.json             # Workspace root
+└── README.md
 ```
 
-### Key Technologies
+## Development
 
-- **Frontend**: React 19, TypeScript, Tailwind CSS v4, Zustand, Vite
-- **Backend**: Node.js, WebSocket (ws)
-- **Protocol**: JSON-RPC over WebSocket
+### Run tests
+
+```bash
+npm run test
+```
+
+### Type checking
+
+```bash
+npm run typecheck
+```
+
+### Build for production
+
+```bash
+npm run build
+```
+
+The frontend build output will be in `packages/frontend/dist/`.
+
+## Implemented Features (Phase 1)
+
+- [x] WebSocket connection to backend
+- [x] Pi process spawning and management
+- [x] Message streaming (text, thinking, tool calls)
+- [x] User message display
+- [x] Assistant message with Markdown rendering
+- [x] Thinking blocks (collapsible)
+- [x] Tool call/result display
+- [x] Tool-specific rendering (bash, read, edit, write)
+- [x] Model selector (cycle with Ctrl+P)
+- [x] Thinking level selector (cycle with Shift+Tab)
+- [x] Extension UI dialogs (select, confirm, input)
+- [x] Toast notifications
+- [x] Keyboard shortcuts
+- [x] Compaction summary display
+- [x] Branch summary display
+
+## Coming Soon (Phase 2+)
+
+- [ ] Session list and selector
+- [ ] Session tree navigator
+- [ ] Fork dialog
+- [ ] Model selector dialog
+- [ ] Settings dialog
+- [ ] Image attachments (paste, drag-drop)
+- [ ] Slash command autocomplete
+- [ ] Diff view for edit tool
+- [ ] Syntax highlighting with Shiki
+- [ ] Theme selection
+- [ ] Session export to HTML
 
 ## Related Projects
 
 - [pi-mono](https://github.com/badlogic/pi-mono) - Pi coding agent monorepo
 - [@mariozechner/pi-coding-agent](https://www.npmjs.com/package/@mariozechner/pi-coding-agent) - Pi CLI
-- [@mariozechner/pi-web-ui](https://www.npmjs.com/package/@mariozechner/pi-web-ui) - Browser-based chat UI (different scope)
 
 ## License
 
