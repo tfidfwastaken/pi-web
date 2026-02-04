@@ -12,6 +12,8 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    host: true,
+    allowedHosts: ["gigaslop.exe.xyz", "localhost"],
     proxy: {
       "/ws": {
         target: "ws://localhost:3001",
