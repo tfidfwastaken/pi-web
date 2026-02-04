@@ -29,13 +29,9 @@ export class PiSession extends EventEmitter {
    * Try to find the pi command
    */
   private findPiCommand(): string {
-    // Check common nvm locations
-    const nvmDir = process.env.NVM_DIR || `${process.env.HOME}/.nvm`;
-    const nodeVersion = process.version.replace('v', '');
-    const nvmPiPath = `${nvmDir}/versions/node/v${nodeVersion}/bin/pi`;
-    
-    // Just return "pi" and rely on shell: true to resolve it
-    return "pi";
+    // Use the full path from the current node installation
+    const nodeBinDir = process.execPath.replace(/\/node$/, '');
+    return `${nodeBinDir}/pi`;
   }
 
   /**
@@ -49,7 +45,6 @@ export class PiSession extends EventEmitter {
       this.process = spawn(piCommand, ["--mode", "rpc"], {
         cwd: this.options.cwd,
         stdio: ["pipe", "pipe", "pipe"],
-        shell: true, // Use shell to resolve PATH properly
         env: {
           ...process.env,
           // Ensure color output is disabled for clean JSON
