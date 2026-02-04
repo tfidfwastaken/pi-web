@@ -5,7 +5,8 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { randomUUID } from "node:crypto";
 import { PiSession } from "./session.js";
-import type { WsClientMessage, WsServerMessage } from "@pi-web/shared";
+import { listSessions, getSessionTree, deleteSession } from "./session-utils.js";
+import type { WsClientMessage, WsServerMessage, RpcCommand } from "@pi-web/shared";
 
 export interface ServerOptions {
   port: number;
@@ -179,7 +180,121 @@ async function handleClientMessage(
     return;
   }
 
-  // Forward the message to the pi process
+  // Handle custom commands that pi RPC doesn't support natively
+  const command = message as RpcCommand;
+
+  if (command.type === "list_sessions") {
+    try {
+      const sessions = await listSessions(client.cwd || process.cwd());
+      sendToClient(client.ws, {
+        type: "response",
+        command: "list_sessions",
+        success: true,
+        data: { sessions },
+        id: command.id,
+      } as WsServerMessage);
+    } catch (error) {
+      sendToClient(client.ws, {
+        type: "response",
+        command: "list_sessions",
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to list sessions",
+        id: command.id,
+      } as WsServerMessage);
+    }
+    return;
+  }
+
+  if (command.type === "get_session_tree") {
+    try {
+      // Get current session file from pi state first
+      const statePromise = new Promise<{ sessionFile?: string }>((resolve) => {
+        const stateId = randomUUID();
+        const originalOnMessage = client.session!["options"].onMessage;
+        let resolved = false;
+
+        const interceptHandler = (msg: WsServerMessage) => {
+          if (!resolved && msg.type === "response" && "command" in msg && msg.command === "get_state" && "id" in msg && msg.id === stateId) {
+            resolved = true;
+            client.session!["options"].onMessage = originalOnMessage;
+            if (msg.success && "data" in msg) {
+              resolve(msg.data as { sessionFile?: string });
+            } else {
+              resolve({});
+            }
+          } else {
+            originalOnMessage(msg);
+          }
+        };
+
+        client.session!["options"].onMessage = interceptHandler;
+        client.session!.send(JSON.stringify({ type: "get_state", id: stateId }));
+
+        // Timeout fallback
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            client.session!["options"].onMessage = originalOnMessage;
+            resolve({});
+          }
+        }, 5000);
+      });
+
+      const stateResponse = await statePromise;
+      const sessionFile = stateResponse.sessionFile;
+
+      if (sessionFile) {
+        const result = await getSessionTree(sessionFile);
+        sendToClient(client.ws, {
+          type: "response",
+          command: "get_session_tree",
+          success: true,
+          data: result,
+          id: command.id,
+        } as WsServerMessage);
+      } else {
+        sendToClient(client.ws, {
+          type: "response",
+          command: "get_session_tree",
+          success: true,
+          data: { tree: [] },
+          id: command.id,
+        } as WsServerMessage);
+      }
+    } catch (error) {
+      sendToClient(client.ws, {
+        type: "response",
+        command: "get_session_tree",
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to get session tree",
+        id: command.id,
+      } as WsServerMessage);
+    }
+    return;
+  }
+
+  if (command.type === "delete_session") {
+    try {
+      await deleteSession((command as { sessionPath: string }).sessionPath);
+      sendToClient(client.ws, {
+        type: "response",
+        command: "delete_session",
+        success: true,
+        id: command.id,
+      } as WsServerMessage);
+    } catch (error) {
+      sendToClient(client.ws, {
+        type: "response",
+        command: "delete_session",
+        success: false,
+        error: error instanceof Error ? error.message : "Failed to delete session",
+        id: command.id,
+      } as WsServerMessage);
+    }
+    return;
+  }
+
+  // Forward all other messages to the pi process
   client.session.send(JSON.stringify(message));
 }
 

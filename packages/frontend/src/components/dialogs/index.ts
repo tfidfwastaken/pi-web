@@ -3,3 +3,8 @@ export { ExtensionSelectDialog } from "./ExtensionSelectDialog";
 export { ExtensionConfirmDialog } from "./ExtensionConfirmDialog";
 export { ExtensionInputDialog } from "./ExtensionInputDialog";
 export { ExtensionDialogManager } from "./ExtensionDialogManager";
+export { SessionSelectorDialog } from "./SessionSelectorDialog";
+export { SessionTreeDialog } from "./SessionTreeDialog";
+export { ForkDialog } from "./ForkDialog";
+export { ModelSelectorDialog } from "./ModelSelectorDialog";
+export { SettingsDialog } from "./SettingsDialog";

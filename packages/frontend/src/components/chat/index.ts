@@ -8,3 +8,4 @@ export { ToolCallBlock } from "./ToolCallBlock";
 export { ToolResultBlock } from "./ToolResultBlock";
 export { CompactionSummary } from "./CompactionSummary";
 export { BranchSummary } from "./BranchSummary";
+export { SlashCommandAutocomplete } from "./SlashCommandAutocomplete";

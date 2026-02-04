@@ -8,11 +8,13 @@ A web application frontend for the [pi coding agent](https://github.com/badlogic
 
 - 💬 **Full Chat Interface** - Message streaming, thinking blocks, tool execution display
 - 🛠️ **Tool Visualization** - Bash output, file reads, edits, and writes with syntax highlighting
-- 🌲 **Session Management** - Tree-based branching (coming soon)
-- 🤖 **Model & Thinking Control** - Cycle models and thinking levels
+- 🌲 **Session Management** - Session list, tree navigation, branching, and forking
+- 🤖 **Model & Thinking Control** - Model selector with search, thinking level controls
 - 🔌 **Extension Support** - Extension UI dialogs (select, confirm, input)
 - ⌨️ **Keyboard Shortcuts** - TUI-like keybindings
 - 🎨 **Dark Theme** - Tailwind-based dark mode design
+- 🖼️ **Image Attachments** - Paste or drag-drop images into chat
+- ⚡ **Slash Commands** - Autocomplete for commands, prompts, and skills
 
 ## Quick Start
 
@@ -82,10 +84,19 @@ Browser                          Server
 |----------|--------|
 | `Enter` | Send message |
 | `Shift+Enter` | New line in input |
-| `Escape` | Abort streaming |
+| `Escape` | Abort streaming / Close dialog |
 | `Ctrl+P` | Cycle model |
+| `Ctrl+L` | Open model selector |
 | `Shift+Tab` | Cycle thinking level |
 | `Ctrl+O` | Toggle tools collapsed |
+| `Ctrl+Shift+O` | Toggle thinking collapsed |
+| `Ctrl+R` | Open session selector (resume) |
+| `Ctrl+T` | Open session tree |
+| `Ctrl+F` | Fork session |
+| `Ctrl+N` | New session |
+| `Ctrl+,` | Open settings |
+| `Ctrl+B` | Toggle sidebar |
+| `Ctrl+V` | Paste image |
 
 ## Configuration
 
@@ -165,8 +176,9 @@ npm run build
 
 The frontend build output will be in `packages/frontend/dist/`.
 
-## Implemented Features (Phase 1)
+## Implemented Features
 
+### Phase 1: Basic Chat ✅
 - [x] WebSocket connection to backend
 - [x] Pi process spawning and management
 - [x] Message streaming (text, thinking, tool calls)
@@ -183,19 +195,51 @@ The frontend build output will be in `packages/frontend/dist/`.
 - [x] Compaction summary display
 - [x] Branch summary display
 
-## Coming Soon (Phase 2+)
+### Phase 2: Tool Display ✅
+- [x] Bash output with syntax highlighting
+- [x] File read display with line numbers
+- [x] Edit tool diff display
+- [x] Write tool file content display
 
-- [ ] Session list and selector
-- [ ] Session tree navigator
-- [ ] Fork dialog
-- [ ] Model selector dialog
-- [ ] Settings dialog
-- [ ] Image attachments (paste, drag-drop)
-- [ ] Slash command autocomplete
-- [ ] Diff view for edit tool
+### Phase 3: Session Management ✅
+- [x] Session list and selector dialog
+- [x] Session search and filtering
+- [x] Session tree navigator
+- [x] Fork dialog (select message to fork from)
+- [x] New session command
+- [x] Session rename
+- [x] Session delete with confirmation
+
+### Phase 4: Model & Settings ✅
+- [x] Model selector dialog with search
+- [x] Available models list grouped by provider
+- [x] Model info (pricing, context window, capabilities)
+- [x] Thinking level selector with colors
+- [x] Settings dialog with tabs
+- [x] Keyboard shortcuts reference
+
+### Phase 5: Extension UI ✅
+- [x] Select dialog component
+- [x] Confirm dialog component
+- [x] Input dialog component
+- [x] Dialog queue management
+- [x] Notification toast system
+
+### Phase 6: Advanced Features ✅
+- [x] Image attachments (paste with Ctrl+V)
+- [x] Drag-drop image support
+- [x] Image preview thumbnails
+- [x] Slash command autocomplete
+- [x] Fuzzy search for commands
+
+## Coming Soon
+
+- [ ] Diff view for edit tool (Monaco)
 - [ ] Syntax highlighting with Shiki
-- [ ] Theme selection
+- [ ] Theme selection (light/dark)
 - [ ] Session export to HTML
+- [ ] Message virtualization for long sessions
+- [ ] Editor dialog for extensions
 
 ## Related Projects
 

@@ -2,13 +2,23 @@ import { useState, useEffect } from "react";
 import { useStore } from "./store";
 import { AppShell } from "./components/layout";
 import { ChatPanel } from "./components/chat";
-import { ConnectDialog, ExtensionDialogManager } from "./components/dialogs";
+import {
+  ConnectDialog,
+  ExtensionDialogManager,
+  SessionSelectorDialog,
+  SessionTreeDialog,
+  ForkDialog,
+  ModelSelectorDialog,
+  SettingsDialog,
+} from "./components/dialogs";
 import { ToastContainer, addToast } from "./components/ui";
 import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 import { useRpcEvent } from "./rpc";
 
 export function App() {
   const connectionStatus = useStore((s) => s.connectionStatus);
+  const activeDialog = useStore((s) => s.ui.activeDialog);
+  const setActiveDialog = useStore((s) => s.setActiveDialog);
   const [showConnect, setShowConnect] = useState(true);
 
   // Register keyboard shortcuts
@@ -35,6 +45,8 @@ export function App() {
     }
   }, [connectionStatus]);
 
+  const closeDialog = () => setActiveDialog(null);
+
   return (
     <>
       <AppShell>
@@ -48,6 +60,21 @@ export function App() {
       {showConnect && connectionStatus !== "connected" && (
         <ConnectDialog onConnect={() => setShowConnect(false)} />
       )}
+
+      {/* Session selector dialog */}
+      {activeDialog === "sessionSelector" && <SessionSelectorDialog onClose={closeDialog} />}
+
+      {/* Session tree dialog */}
+      {activeDialog === "sessionTree" && <SessionTreeDialog onClose={closeDialog} />}
+
+      {/* Fork dialog */}
+      {activeDialog === "fork" && <ForkDialog onClose={closeDialog} />}
+
+      {/* Model selector dialog */}
+      {activeDialog === "modelSelector" && <ModelSelectorDialog onClose={closeDialog} />}
+
+      {/* Settings dialog */}
+      {activeDialog === "settings" && <SettingsDialog onClose={closeDialog} />}
 
       {/* Toast notifications */}
       <ToastContainer />

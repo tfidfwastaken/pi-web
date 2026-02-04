@@ -253,7 +253,16 @@ export type RpcCommand =
   | { id?: string; type: "get_commands" }
 
   // Session list (custom for web)
-  | { id?: string; type: "list_sessions" };
+  | { id?: string; type: "list_sessions" }
+
+  // Session tree (custom for web)
+  | { id?: string; type: "get_session_tree" }
+
+  // Navigate to a specific entry in the tree
+  | { id?: string; type: "navigate_tree"; targetId: string; summarize?: boolean }
+
+  // Delete a session
+  | { id?: string; type: "delete_session"; sessionPath: string };
 
 export type RpcCommandType = RpcCommand["type"];
 
@@ -338,6 +347,15 @@ export type RpcResponse =
 
   // Session list (custom)
   | { id?: string; type: "response"; command: "list_sessions"; success: true; data: { sessions: SessionInfo[] } }
+
+  // Session tree (custom)
+  | { id?: string; type: "response"; command: "get_session_tree"; success: true; data: { tree: SessionTreeNode[]; currentId?: string } }
+
+  // Navigate tree
+  | { id?: string; type: "response"; command: "navigate_tree"; success: true; data: { cancelled: boolean } }
+
+  // Delete session
+  | { id?: string; type: "response"; command: "delete_session"; success: true }
 
   // Error
   | { id?: string; type: "response"; command: string; success: false; error: string };
@@ -434,6 +452,21 @@ export interface SessionInfo {
   messageCount: number;
   firstMessage?: string;
   lastModified: string;
+}
+
+// ============================================================================
+// Session Tree Types (for tree navigator)
+// ============================================================================
+
+export interface SessionTreeNode {
+  id: string;
+  parentId: string | null;
+  type: "user" | "assistant" | "branch" | "label" | "compaction";
+  text: string;
+  timestamp: string;
+  label?: string;
+  children: SessionTreeNode[];
+  isCurrent?: boolean;
 }
 
 // ============================================================================

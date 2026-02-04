@@ -84,6 +84,7 @@ interface AppActions {
 
   // Prompt actions
   sendPrompt: (message: string) => Promise<void>;
+  sendPromptWithImages: (message: string, images: import("@pi-web/shared").ImageContent[]) => Promise<void>;
   abort: () => Promise<void>;
 
   // Model actions
@@ -227,6 +228,13 @@ export const useStore = create<Store>()(
       if (!rpcClient) throw new Error("Not connected");
 
       await rpcClient.command({ type: "prompt", message } as RpcCommand);
+    },
+
+    sendPromptWithImages: async (message, images) => {
+      const { rpcClient } = get();
+      if (!rpcClient) throw new Error("Not connected");
+
+      await rpcClient.command({ type: "prompt", message, images } as RpcCommand);
     },
 
     abort: async () => {
