@@ -1,19 +1,20 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo } from "react";
 import { useStore } from "../../store";
 import { UserMessage } from "./UserMessage";
 import { AssistantMessage } from "./AssistantMessage";
-import { ToolResultBlock } from "./ToolResultBlock";
+import { ToolExecutionBlock } from "./ToolExecutionBlock";
 import { CompactionSummary } from "./CompactionSummary";
 import { BranchSummary } from "./BranchSummary";
 import type {
   AgentMessage,
-  UserMessage as UserMessageType,
-  AssistantMessage as AssistantMessageType,
   ToolResultMessage,
-  CompactionSummaryMessage,
-  BranchSummaryMessage,
   BashExecutionMessage,
   CustomMessage,
+  ToolCall,
+  UserMessage as UserMessageType,
+  AssistantMessage as AssistantMessageType,
+  CompactionSummaryMessage,
+  BranchSummaryMessage,
 } from "@pi-web/shared";
 import {
   isUserMessage,
@@ -24,6 +25,17 @@ import {
   isBashExecutionMessage,
   isCustomMessage,
 } from "@pi-web/shared";
+
+// Represents a grouped display item
+type DisplayItem =
+  | { type: "user"; message: UserMessageType }
+  | { type: "assistant"; message: AssistantMessageType; isStreaming: boolean }
+  | { type: "toolExecution"; toolCall: ToolCall; result?: ToolResultMessage }
+  | { type: "compaction"; message: CompactionSummaryMessage }
+  | { type: "branch"; message: BranchSummaryMessage }
+  | { type: "bash"; message: BashExecutionMessage }
+  | { type: "custom"; message: CustomMessage }
+  | { type: "unknown"; message: AgentMessage };
 
 export function MessageList() {
   const messages = useStore((s) => s.messages);
@@ -39,6 +51,60 @@ export function MessageList() {
     ? [...messages, streamingMessage]
     : messages;
 
+  // Group messages: pair tool calls with their results
+  const displayItems = useMemo(() => {
+    const items: DisplayItem[] = [];
+    const toolResultsById = new Map<string, ToolResultMessage>();
+
+    // First pass: collect all tool results by their toolCallId
+    for (const msg of allMessages) {
+      if (isToolResultMessage(msg)) {
+        toolResultsById.set(msg.toolCallId, msg);
+      }
+    }
+
+    // Second pass: build display items
+    for (let i = 0; i < allMessages.length; i++) {
+      const message = allMessages[i];
+      const isStreamingMsg = message === streamingMessage;
+
+      if (isUserMessage(message)) {
+        items.push({ type: "user", message: message as UserMessageType });
+      } else if (isAssistantMessage(message)) {
+        const assistantMsg = message as AssistantMessageType;
+        // Add assistant message (without tool calls - those are handled separately)
+        items.push({ type: "assistant", message: assistantMsg, isStreaming: isStreamingMsg });
+
+        // Extract tool calls and pair with results
+        for (const content of assistantMsg.content) {
+          if (content.type === "toolCall") {
+            const toolCall = content as ToolCall;
+            const result = toolResultsById.get(toolCall.id);
+            items.push({ type: "toolExecution", toolCall, result });
+          }
+        }
+      } else if (isToolResultMessage(message)) {
+        // Skip - already handled above when pairing with tool calls
+        continue;
+      } else if (isCompactionSummaryMessage(message)) {
+        items.push({ type: "compaction", message: message as CompactionSummaryMessage });
+      } else if (isBranchSummaryMessage(message)) {
+        items.push({ type: "branch", message: message as BranchSummaryMessage });
+      } else if (isBashExecutionMessage(message)) {
+        items.push({ type: "bash", message: message as BashExecutionMessage });
+      } else if (isCustomMessage(message)) {
+        const customMsg = message as CustomMessage;
+        if (customMsg.display) {
+          items.push({ type: "custom", message: customMsg });
+        }
+      } else {
+        items.push({ type: "unknown", message });
+      }
+    }
+
+    return items;
+  }, [allMessages, streamingMessage]);
+
   if (allMessages.length === 0) {
     return (
       <div className="flex-1 flex items-center justify-center text-zinc-500">
@@ -52,59 +118,44 @@ export function MessageList() {
 
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
-      {allMessages.map((message, index) => (
-        <MessageItem
-          key={index}
-          message={message}
-          isStreaming={message === streamingMessage}
-        />
+      {displayItems.map((item, index) => (
+        <DisplayItemComponent key={index} item={item} />
       ))}
       <div ref={bottomRef} />
     </div>
   );
 }
 
-interface MessageItemProps {
-  message: AgentMessage;
-  isStreaming?: boolean;
-}
+function DisplayItemComponent({ item }: { item: DisplayItem }) {
+  switch (item.type) {
+    case "user":
+      return <UserMessage message={item.message} />;
 
-function MessageItem({ message, isStreaming }: MessageItemProps) {
-  if (isUserMessage(message)) {
-    return <UserMessage message={message} />;
+    case "assistant":
+      return <AssistantMessage message={item.message} isStreaming={item.isStreaming} />;
+
+    case "toolExecution":
+      return <ToolExecutionBlock toolCall={item.toolCall} result={item.result} />;
+
+    case "compaction":
+      return <CompactionSummary message={item.message} />;
+
+    case "branch":
+      return <BranchSummary message={item.message} />;
+
+    case "bash":
+      return <BashExecutionBlock message={item.message} />;
+
+    case "custom":
+      return <CustomMessageBlock message={item.message} />;
+
+    case "unknown":
+      return (
+        <div className="text-xs text-zinc-500">
+          Unknown message type: {(item.message as AgentMessage & { role: string }).role}
+        </div>
+      );
   }
-
-  if (isAssistantMessage(message)) {
-    return <AssistantMessage message={message} isStreaming={isStreaming} />;
-  }
-
-  if (isToolResultMessage(message)) {
-    return <ToolResultBlock message={message} />;
-  }
-
-  if (isCompactionSummaryMessage(message)) {
-    return <CompactionSummary message={message} />;
-  }
-
-  if (isBranchSummaryMessage(message)) {
-    return <BranchSummary message={message} />;
-  }
-
-  if (isBashExecutionMessage(message)) {
-    return <BashExecutionBlock message={message} />;
-  }
-
-  if (isCustomMessage(message)) {
-    if (!message.display) return null;
-    return <CustomMessageBlock message={message} />;
-  }
-
-  // Unknown message type
-  return (
-    <div className="text-xs text-zinc-500">
-      Unknown message type: {(message as any).role}
-    </div>
-  );
 }
 
 function BashExecutionBlock({ message }: { message: BashExecutionMessage }) {

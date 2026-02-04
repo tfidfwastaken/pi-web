@@ -2,12 +2,10 @@ import type {
   AssistantMessage as AssistantMessageType,
   TextContent,
   ThinkingContent,
-  ToolCall,
 } from "@pi-web/shared";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ThinkingBlock } from "./ThinkingBlock";
-import { ToolCallBlock } from "./ToolCallBlock";
 
 interface AssistantMessageProps {
   message: AssistantMessageType;
@@ -15,23 +13,26 @@ interface AssistantMessageProps {
 }
 
 export function AssistantMessage({ message, isStreaming }: AssistantMessageProps) {
-  // Separate content by type
+  // Separate content by type (tool calls are rendered separately by MessageList)
   const thinking: ThinkingContent[] = [];
   const text: TextContent[] = [];
-  const toolCalls: ToolCall[] = [];
 
   for (const block of message.content) {
     if (block.type === "thinking") {
       thinking.push(block as ThinkingContent);
     } else if (block.type === "text") {
       text.push(block as TextContent);
-    } else if (block.type === "toolCall") {
-      toolCalls.push(block as ToolCall);
     }
   }
 
   const combinedThinking = thinking.map((t) => t.thinking).join("\n\n");
   const combinedText = text.map((t) => t.text).join("\n");
+
+  // Don't render if there's no text/thinking content (only tool calls)
+  const hasVisibleContent = combinedThinking || combinedText || message.stopReason === "error";
+  if (!hasVisibleContent && !isStreaming) {
+    return null;
+  }
 
   return (
     <div className="flex justify-start">
@@ -78,34 +79,17 @@ export function AssistantMessage({ message, isStreaming }: AssistantMessageProps
           </div>
         )}
 
-        {/* Tool Calls */}
-        {toolCalls.map((toolCall) => (
-          <ToolCallBlock key={toolCall.id} toolCall={toolCall} />
-        ))}
+        {/* Error display */}
+        {message.stopReason === "error" && message.errorMessage && (
+          <div className="text-sm text-red-400 px-1">
+            Error: {message.errorMessage}
+          </div>
+        )}
 
-        {/* Message Metadata */}
-        {!isStreaming && (
-          <div className="flex items-center gap-3 text-xs text-zinc-500 px-1">
-            <span>{message.model}</span>
-            {message.usage && (
-              <>
-                <span>•</span>
-                <span>
-                  {message.usage.input + message.usage.output} tokens
-                  {message.usage.cost?.total > 0 && (
-                    <span className="ml-1">
-                      (${message.usage.cost.total.toFixed(4)})
-                    </span>
-                  )}
-                </span>
-              </>
-            )}
-            {message.stopReason === "error" && message.errorMessage && (
-              <>
-                <span>•</span>
-                <span className="text-red-400">{message.errorMessage}</span>
-              </>
-            )}
+        {/* Aborted display */}
+        {message.stopReason === "aborted" && (
+          <div className="text-sm text-yellow-400 px-1">
+            {message.errorMessage || "Operation aborted"}
           </div>
         )}
       </div>
