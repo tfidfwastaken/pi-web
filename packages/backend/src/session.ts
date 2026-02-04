@@ -26,15 +26,30 @@ export class PiSession extends EventEmitter {
   }
 
   /**
+   * Try to find the pi command
+   */
+  private findPiCommand(): string {
+    // Check common nvm locations
+    const nvmDir = process.env.NVM_DIR || `${process.env.HOME}/.nvm`;
+    const nodeVersion = process.version.replace('v', '');
+    const nvmPiPath = `${nvmDir}/versions/node/v${nodeVersion}/bin/pi`;
+    
+    // Just return "pi" and rely on shell: true to resolve it
+    return "pi";
+  }
+
+  /**
    * Spawn the pi process
    */
   async spawn(): Promise<void> {
-    const piCommand = this.options.piCommand ?? "pi";
+    // Try to find pi in common locations
+    const piCommand = this.options.piCommand ?? this.findPiCommand();
 
     try {
       this.process = spawn(piCommand, ["--mode", "rpc"], {
         cwd: this.options.cwd,
         stdio: ["pipe", "pipe", "pipe"],
+        shell: true, // Use shell to resolve PATH properly
         env: {
           ...process.env,
           // Ensure color output is disabled for clean JSON

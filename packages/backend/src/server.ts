@@ -117,7 +117,11 @@ async function handleClientMessage(
       return;
     }
 
-    const cwd = message.cwd || options.defaultCwd || process.cwd();
+    // Expand ~ to home directory
+    let cwd = message.cwd || options.defaultCwd || process.cwd();
+    if (cwd.startsWith("~")) {
+      cwd = cwd.replace("~", process.env.HOME || "");
+    }
     client.cwd = cwd;
 
     console.log(`[server] Creating session for ${client.id} in ${cwd}`);
